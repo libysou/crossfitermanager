@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>크로스핏 계산기</title>
+<style>
+:root{--bg:#0f172a;--card:#0b1220;--accent:#06b6d4;--muted:#94a3b8;--text:#e6eef8}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Noto Sans KR',sans-serif;background:linear-gradient(180deg,#071022 0%,#07182a 100%);color:var(--text)}
+.app{max-width:440px;margin:12px auto;padding:12px}
+header{display:flex;align-items:center;justify-content:space-between}
+h1{font-size:18px;margin:0}
+nav{display:flex;gap:6px;margin:12px 0;overflow:auto}
+button.tab{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 12px;border-radius:10px;color:var(--text);font-weight:600}
+.card{background:var(--card);padding:12px;border-radius:12px;margin-bottom:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6);display:none}
+.card.active{display:block}
+label{font-size:13px;color:var(--muted)}
+input[type=number],input[type=text],select{width:100%;padding:10px;margin-top:6px;border-radius:10px;border:0;background:rgba(255,255,255,0.02);color:var(--text)}
+.row{display:flex;gap:8px}
+.row > *{flex:1}
+.bigbtn{width:100%;padding:14px;border-radius:12px;border:0;background:var(--accent);color:#032023;font-weight:700;font-size:16px;transition:transform 0.1s, box-shadow 0.1s;}
+.bigbtn:active{transform:translateY(2px);box-shadow:0 2px 4px rgba(0,0,0,0.2);}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{padding:6px;border-bottom:1px dashed rgba(255,255,255,0.03);font-size:13px}
+.small{font-size:12px;color:var(--muted)}
+.muted{color:var(--muted)}
+.flex{display:flex;gap:8px;align-items:center}
+.pill{background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:999px;font-weight:600}
+.linklike{background:transparent;border:0;color:var(--accent);font-weight:700;transition:transform 0.1s;}
+.linklike:active{transform:translateY(2px);}
+.foot{font-size:12px;color:var(--muted);text-align:center;margin-top:10px}
+@media(min-width:460px){.app{margin-top:20px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<h1>🏋️ 크로스핏 계산기 🏋️</h1>
+<div class="pill small">해지메이드.문의사절.</div>
+</header>
+
+<nav>
+<button class="tab" data-tab="time">시간</button>
+<button class="tab" data-tab="1rm">1RM</button>
+<button class="tab" data-tab="rpe">RPE</button>
+<button class="tab" data-tab="pace">Pace</button>
+<button class="tab" data-tab="plates">플레이트</button>
+<button class="tab" data-tab="pb">PB</button>
+</nav>
+
+<!-- 시간 계산기 -->
+<section id="time" class="card active">
+<h2>시간 계산기</h2>
+<div class="row" style="margin-bottom:12px; gap:6px;">
+<label for="restMode">휴식 시간 모드:</label>
+<select id="restMode">
+<option value="manual">수동설정</option>
+<option value="ratio">1:1 Rest</option>
+</select>
+<input type="number" id="restTime" placeholder="휴식시간(초)" min="0" />
+</div>
+<div class="row" style="margin-bottom:12px; gap:6px;">
+<label for="totalSets">세트 수:</label>
+<input type="number" id="totalSets" placeholder="세트 수" min="1" />
+<button class="bigbtn" id="generateTable">표 생성</button>
+</div>
+<table id="timeTable">
+<thead>
+<tr>
+<th>세트</th>
+<th>운동 시작시간</th>
+<th>운동 종료시간</th>
+<th>세트 소요시간</th>
+<th>쉬는시간</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+<div class="row" style="margin-top:12px; gap:6px;">
+<button class="bigbtn" id="undoSet">되돌리기</button>
+<button class="bigbtn" id="resetTable">리셋</button>
+</div>
+</section>
+
+<!-- 1RM 계산기 -->
+<section id="1rm" class="card">
+<h2>1RM 계산기</h2>
+<label>중량(lb):<input type="number" id="oneRMWeight"/></label>
+<label>반복횟수:<input type="number" id="oneRMReps"/></label>
+<button class="bigbtn" id="calc1RM">계산</button>
+<p id="oneRMResult"></p>
+</section>
+
+<!-- RPE 계산기 -->
+<section id="rpe" class="card">
+<h2>RPE 계산기</h2>
+<label>1RM(lb):<input type="number" id="rpe1RM"/></label>
+<label>목표 반복횟수:<input type="number" id="rpeReps"/></label>
+<label>RPE:<input type="number" id="rpeValue" min="1" max="10"/></label>
+<button class="bigbtn" id="calcRPE">계산</button>
+<p id="rpeResult"></p>
+</section>
+
+<!-- Pace 계산기 -->
+<section id="pace" class="card">
+<h2>Pace 계산기</h2>
+<label>거리(km):<input type="number" id="paceDist"/></label>
+<label>시간(mm:ss):<input type="text" id="paceTime"/></label>
+<button class="bigbtn" id="calcPace">계산</button>
+<p id="paceResult"></p>
+</section>
+
+<!-- 플레이트 계산기 -->
+<section id="plates" class="card">
+<h2>바벨 플레이트 계산기</h2>
+<label>목표 중량(lb):<input type="number" id="plateWeight"/></label>
+<button class="bigbtn" id="calcPlates">계산</button>
+<p id="plateResult"></p>
+</section>
+
+<!-- PB 기록 -->
+<section id="pb" class="card">
+<h2>PB 기록</h2>
+<label>운동 이름:<input type="text" id="pbName"/></label>
+<label>중량(lb):<input type="number" id="pbWeight"/></label>
+<button class="bigbtn" id="savePB">저장</button>
+<ul id="pbList"></ul>
+</section>
+
+</div>
+
+<script>
+// 탭 전환
+const tabs = document.querySelectorAll('.tab');
+const sections = document.querySelectorAll('.card');
+tabs.forEach(tab => {
+tab.addEventListener('click', ()=>{
+sections.forEach(sec => sec.classList.remove('active'));
+document.getElementById(tab.dataset.tab).classList.add('active');
+});
+});
+
+// ================= 시간 계산기 =================
+const generateBtn = document.getElementById('generateTable');
+const tableBody = document.querySelector('#timeTable tbody');
+const totalSetsInput = document.getElementById('totalSets');
+const restTimeInput = document.getElementById('restTime');
+const restModeSelect = document.getElementById('restMode');
+const undoBtn = document.getElementById('undoSet');
+const resetBtn = document.getElementById('resetTable');
+let sets = [];
+function parseTime(str){ const [m,s]=str.split(':').map(Number); return m*60+s; }
+function formatTime(sec){ const m=Math.floor(sec/60).toString().padStart(2,'0'); const s=(sec%60).toString().padStart(2,'0'); return `${m}:${s}`; }
+restModeSelect.addEventListener('change', ()=>{ restTimeInput.disabled = restModeSelect.value==='ratio'; if(restModeSelect.value==='ratio') restTimeInput.value=''; });
+function renderTable(){
+  tableBody.innerHTML='';
+  sets.forEach((set,i)=>{
+    const prevEnd = i>0 ? parseTime(sets[i-1].end) : 0;
+    const prevRest = i>0 ? sets[i-1].rest : 0;
+    const startSec = prevEnd + prevRest;
+    const endSec = parseTime(set.end || "00:00");
+    const duration = endSec-startSec;
+    const restSec = restModeSelect.value==='ratio'?duration:Number(restTimeInput.value)||0;
+    set.start=startSec; set.duration=duration; set.rest=restSec;
+    const row=document.createElement('tr');
+    row.innerHTML=`
+    <td>${i+1}</td>
+    <td>${formatTime(startSec)}</td>
+    <td><input type="text" value="${set.end}" data-index="${i}" class="endTimeInput"/></td>
+    <td>${formatTime(duration)}</td>
+    <td>${formatTime(restSec)}</td>`;
+    tableBody.appendChild(row);
+  });
+  document.querySelectorAll('.endTimeInput').forEach(input=>{
+    const idx=Number(input.dataset.index);
+    input.oninput=function(e){
+      sets[idx].end=e.target.value;
+      const row=input.parentElement.parentElement;
+      const startSec=sets[idx].start;
+      const endSec=parseTime(sets[idx].end||"00:00");
+      const duration=endSec-startSec;
+      const restSec=restModeSelect.value==='ratio'?duration:Number(restTimeInput.value)||0;
+      sets[idx].duration=duration; sets[idx].rest=restSec;
+      row.cells[3].innerText=formatTime(duration);
+      row.cells[4].innerText=formatTime(restSec);
+      if(idx+1<sets.length){
+        const nextRow=tableBody.rows[idx+1];
+        const nextStart=endSec+restSec;
+        sets[idx+1].start=nextStart;
+        nextRow.cells[1].innerText=formatTime(nextStart);
+        const nextEnd=parseTime(sets[idx+1].end||"00:00");
+        const nextDur=nextEnd-nextStart;
+        const nextRest=restModeSelect.value==='ratio'?nextDur:Number(restTimeInput.value)||0;
+        sets[idx+1].duration=nextDur; sets[idx+1].rest=nextRest;
+        nextRow.cells[3].innerText=formatTime(nextDur);
+        nextRow.cells[4].innerText=formatTime(nextRest);
+      }
+    }
+  });
+}
+generateBtn.addEventListener('click', ()=>{
+  const total=Number(totalSetsInput.value);
+  if(!total||total<1){alert('세트 수를 입력해주세요'); return;}
+  sets=[];
+  for(let i=0;i<total;i++) sets.push({end:'00:00',start:0,duration:0,rest:0});
+  renderTable();
+});
+undoBtn.addEventListener('click', ()=>{ sets.pop(); renderTable(); });
+resetBtn.addEventListener('click', ()=>{ sets=[]; renderTable(); });
+
+// ================= 1RM 계산기 =================
+document.getElementById('calc1RM').addEventListener('click', ()=>{
+const w=Number(document.getElementById('oneRMWeight').value);
+const r=Number(document.getElementById('oneRMReps').value);
+if(!w||!r){alert('입력 필요'); return;}
+document.getElementById('oneRMResult').innerText=`1RM ≈ ${Math.round(w*(1+r/30))} lb`;
+});
+
+// ================= RPE 계산기 =================
+document.getElementById('calcRPE').addEventListener('click', ()=>{
+const oneRM=Number(document.getElementById('rpe1RM').value);
+const reps=Number(document.getElementById('rpeReps').value);
+const rpe=Number(document.getElementById('rpeValue').value);
+if(!oneRM||!reps||!rpe){alert('입력 필요'); return;}
+const percent={10:1,9:0.97,8:0.94,7:0.91,6:0.88,5:0.85,4:0.82,3:0.79,2:0.76,1:0.73}[rpe]||1;
+let weight = oneRM * percent;
+// 5lb 단위로 반올림
+weight = Math.round(weight / 5) * 5;
+document.getElementById('rpeResult').innerText = `수행 중량 ≈ ${weight} lb`;
+
+// ================= Pace 계산기 =================
+document.getElementById('calcPace').addEventListener('click', ()=>{
+const d=Number(document.getElementById('paceDist').value);
+const t=document.getElementById('paceTime').value;
+if(!d||!t){alert('입력 필요'); return;}
+const sec=parseTime(t);
+const paceSec=Math.round(sec/d);
+document.getElementById('paceResult').innerText=`Pace: ${Math.floor(paceSec/60)}:${(paceSec%60).toString().padStart(2,'0')} /km`;
+});
+
+// ================= 플레이트 계산기 =================
+document.getElementById('calcPlates').addEventListener('click', ()=>{
+const w=Number(document.getElementById('plateWeight').value);
+if(!w){alert('중량 입력'); return;}
+const plates=[45,35,25,10,5,2.5]; // lb
+let remaining=w-45; // 바벨 45lb 기준
+let out=[];
+for(let p of plates){
+  let count=Math.floor(remaining/(p*2));
+  if(count>0){out.push(`${p} x ${count*2}`); remaining-=p*2*count;}
+}
+document.getElementById('plateResult').innerText=`바벨+플레이트: 45lb + ${out.join(', ')}`;
+});
+
+// ================= PB 기록 =================
+const pbList=document.getElementById('pbList');
+document.getElementById('savePB').addEventListener('click', ()=>{
+const name=document.getElementById('pbName').value;
+const weight=document.getElementById('pbWeight').value;
+if(!name||!weight){alert('입력 필요'); return;}
+const li=document.createElement('li');
+li.innerText=`${name}: ${weight} lb`;
+pbList.appendChild(li);
+});
+</script>
+</body>
+</html>

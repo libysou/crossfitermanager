@@ -46,42 +46,87 @@
       <button class="tab" data-tab="pb">PB</button>
     </nav>
 
-    <section id="time" class="card">
-      <div class="flex">
-        <div>
-          <label>목표 세트 수</label>
-          <input id="targetSets" type="number" min="1" value="8">
-        </div>
-        <div>
-          <label>휴식 모드</label>
-          <select id="restMode">
-            <option value="1to1">1:1 Rest</option>
-            <option value="fixed">고정 Rest</option>
-          </select>
-        </div>
-      </div>
-      <div id="fixedRestRow" style="display:none;margin-top:8px">
-        <label>고정 휴식시간 (초)</label>
-        <input id="fixedRestSec" type="number" min="0" value="60">
-      </div>
+    <section id="time" class="card active">
+  <h2>시간 계산기 (엑셀 표형)</h2>
+  <label>휴식 시간 설정 (초)</label>
+  <input type="number" id="restTime" value="60" min="0" />
+  <table id="timeTable">
+    <thead>
+      <tr>
+        <th>세트</th>
+        <th>운동 종료 시간</th>
+        <th>세트 소요 시간</th>
+        <th>다음 세트 시작 시간</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- 세트 행이 여기 추가됨 -->
+    </tbody>
+  </table>
+  <div class="row">
+    <input type="text" id="currentTime" placeholder="mm:ss 입력" />
+    <button class="bigbtn" id="addSet">세트 추가</button>
+    <button class="bigbtn" id="undoSet">되돌리기</button>
+    <button class="bigbtn" id="resetTable">리셋</button>
+  </div>
+</section>
 
-      <div style="margin-top:10px" class="flex">
-        <button id="startBtn" class="bigbtn">지금 시작</button>
-        <button id="recordBtn" class="bigbtn" style="background:#94a3b8;color:#03141a">세트 종료 기록</button>
-      </div>
-      <div style="margin-top:8px" class="flex">
-         <button id="undoBtn" class="bigbtn" style="background:#0b1220;color:var(--accent);border:1px solid var(--accent);">되돌리기</button>
-         <button id="resetBtn" class="bigbtn" style="background:#0b1220;color:#f87171;border:1px solid #f87171;">리셋</button>
-      </div>
+<script>
+const tableBody = document.querySelector('#timeTable tbody');
+const addBtn = document.getElementById('addSet');
+const undoBtn = document.getElementById('undoSet');
+const resetBtn = document.getElementById('resetTable');
+const restInput = document.getElementById('restTime');
+const currentTimeInput = document.getElementById('currentTime');
 
-      <div style="margin-top:10px">
-        <table id="logTable">
-          <thead><tr><th>세트</th><th>시작</th><th>종료</th><th>운동</th><th>휴식</th><th>다음시작</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="foot small">버튼을 눌러 세트 종료를 기록하세요. 데이터는 기기 로컬에 저장됩니다.</div>
-    </section>
+let sets = [];
+
+function parseTime(str) {
+  const [m,s] = str.split(':').map(Number);
+  return m*60 + s;
+}
+function formatTime(sec){
+  const m = Math.floor(sec/60).toString().padStart(2,'0');
+  const s = (sec%60).toString().padStart(2,'0');
+  return `${m}:${s}`;
+}
+
+function renderTable(){
+  tableBody.innerHTML = '';
+  sets.forEach((set,i)=>{
+    const row = document.createElement('tr');
+    const prevEnd = i>0 ? parseTime(sets[i-1].end) : 0;
+    const endSec = parseTime(set.end);
+    const duration = i===0 ? endSec : endSec - prevEnd;
+    const nextStart = endSec + Number(restInput.value);
+    row.innerHTML = `
+      <td>${i+1}</td>
+      <td>${set.end}</td>
+      <td>${formatTime(duration)}</td>
+      <td>${formatTime(nextStart)}</td>
+    `;
+    tableBody.appendChild(row);
+  });
+}
+
+addBtn.addEventListener('click',()=>{
+  const timeStr = currentTimeInput.value.trim();
+  if(!timeStr.match(/^\d{1,2}:\d{2}$/)){ alert('mm:ss 형식으로 입력하세요'); return; }
+  sets.push({end:timeStr});
+  currentTimeInput.value='';
+  renderTable();
+});
+
+undoBtn.addEventListener('click',()=>{
+  sets.pop();
+  renderTable();
+});
+
+resetBtn.addEventListener('click',()=>{
+  sets=[];
+  renderTable();
+});
+</script>
 
     <section id="1rm" class="card" style="display:none">
       <label>사용 중량 (lb)</label>

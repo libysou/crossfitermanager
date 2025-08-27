@@ -137,6 +137,79 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
+ // ================= 시간 계산기 =================
+  const restModeSelect = document.getElementById('restMode');
+  const restTimeInput = document.getElementById('restTime');
+  const totalSetsInput = document.getElementById('totalSets');
+  const tableBody = document.getElementById('timeTable').querySelector('tbody');
+  let sets=[];
+
+  function parseTime(str){ const p=str.split(':').map(Number); return p[0]*60+p[1]; }
+  function formatTime(sec){return `${Math.floor(sec/60)}:${(sec%60).toString().padStart(2,'0')}`;}
+
+  document.getElementById('generateTable').addEventListener('click', ()=>{
+    const n = Number(totalSetsInput.value);
+    if(!n || n<1){alert('세트수 입력'); return;}
+    tableBody.innerHTML=''; sets=[];
+    for(let i=0;i<n;i++){
+      sets.push({start:i===0?0:0,end:0,duration:0,rest:0});
+      const row = tableBody.insertRow();
+      row.insertCell().innerText=i+1;
+      row.insertCell().innerText=formatTime(0);
+      const endCell=row.insertCell();
+      const endInput=document.createElement('input');
+      endInput.type='text';
+      endInput.dataset.index=i;
+      endInput.placeholder='mm:ss';
+      endCell.appendChild(endInput);
+      row.insertCell().innerText='0:00';
+      row.insertCell().innerText='0:00';
+    }
+    updateInputs();
+  });
+
+  function updateInputs(){
+    const inputs = tableBody.querySelectorAll('input');
+    inputs.forEach(input=>{
+      input.addEventListener('input', (e)=>{
+        let val=e.target.value.replace(/\D/g,'');
+        if(val.length>4) val=val.slice(0,4);
+        if(val.length>=3) val=val.slice(0,-2)+':'+val.slice(-2);
+        else if(val.length>=2) val=val.slice(0,-2)+':'+val.slice(-2);
+        e.target.value=val;
+
+        const i=Number(e.target.dataset.index);
+        const sec=parseTime(val);
+        sets[i].end=sec;
+        sets[i].duration=sec-(i===0?0:sets[i-1].end);
+        sets[i].rest=restModeSelect.value==='ratio'?sets[i].duration:restTimeInput.value||0;
+        const row=tableBody.rows[i];
+        row.cells[3].innerText=formatTime(sets[i].duration);
+        row.cells[4].innerText=formatTime(sets[i].rest);
+        if(i+1<sets.length){
+          tableBody.rows[i+1].cells[1].innerText=formatTime(sets[i].end+sets[i].rest);
+        }
+      });
+    });
+  }
+
+  // 되돌리기/리셋
+  document.getElementById('undoSet').addEventListener('click', ()=>{
+    if(sets.length>0){
+      sets.pop();
+      tableBody.deleteRow(sets.length);
+    }
+  });
+  document.getElementById('resetTable').addEventListener('click', ()=>{
+    sets=[]; tableBody.innerHTML='';
+  });
+
+  restModeSelect.addEventListener('change', ()=>{
+    if(restModeSelect.value==='ratio'){
+      restTimeInput.disabled=true; restTimeInput.value='';
+    } else { restTimeInput.disabled=false; }
+  });
+  
   // ================= 1RM =================
   document.getElementById('calc1RM').addEventListener('click', ()=>{
     const w=Number(document.getElementById('oneRMWeight').value);

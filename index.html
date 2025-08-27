@@ -46,10 +46,9 @@
       <button class="tab" data-tab="pb">PB</button>
     </nav>
 
-    <section id="time" class="card active">
+   <section id="time" class="card active">
   <h2>시간 계산기</h2>
 
-  <!-- 1. 휴식시간 설정 -->
   <div class="row" style="margin-bottom:12px; gap:6px;">
     <label for="restMode">휴식 시간 모드:</label>
     <select id="restMode">
@@ -59,14 +58,12 @@
     <input type="number" id="restTime" placeholder="휴식시간(초)" min="0" />
   </div>
 
-  <!-- 2. 세트 수 설정 -->
   <div class="row" style="margin-bottom:12px; gap:6px;">
     <label for="totalSets">세트 수:</label>
     <input type="number" id="totalSets" placeholder="세트 수" min="1" />
     <button class="bigbtn" id="generateTable">표 생성</button>
   </div>
 
-  <!-- 3. 엑셀형 테이블 -->
   <table id="timeTable">
     <thead>
       <tr>
@@ -80,7 +77,6 @@
     <tbody></tbody>
   </table>
 
-  <!-- 4. 버튼 -->
   <div class="row" style="margin-top:12px; gap:6px;">
     <button class="bigbtn" id="undoSet">되돌리기</button>
     <button class="bigbtn" id="resetTable">리셋</button>
@@ -109,7 +105,6 @@ function formatTime(sec){
   return `${m}:${s}`;
 }
 
-// 휴식 모드 선택 시 휴식시간 입력 활성/비활성
 restModeSelect.addEventListener('change', ()=>{
   if(restModeSelect.value==='ratio'){
     restTimeInput.disabled = true;
@@ -122,21 +117,13 @@ restModeSelect.addEventListener('change', ()=>{
 function renderTable(){
   tableBody.innerHTML = '';
   sets.forEach((set,i)=>{
-    // 운동 시작시간 계산
     const prevEnd = i>0 ? parseTime(sets[i-1].end) : 0;
     const prevRest = i>0 ? sets[i-1].rest : 0;
     const startSec = prevEnd + prevRest;
 
-    // 종료시간 파싱
-    let endSec = parseTime(set.end);
+    const duration = parseTime(set.end || "00:00") - startSec;
+    const restSec = restModeSelect.value==='ratio' ? duration : Number(restTimeInput.value) || 0;
 
-    // 세트 소요시간
-    const duration = endSec - startSec;
-
-    // 쉬는시간 계산
-    let restSec = restModeSelect.value==='ratio' ? duration : Number(restTimeInput.value);
-
-    // 현재 세트 정보 저장
     set.start = startSec;
     set.duration = duration;
     set.rest = restSec;
@@ -152,15 +139,41 @@ function renderTable(){
     tableBody.appendChild(row);
   });
 
-  // 운동 종료시간 입력 시 자동 업데이트
+  // 운동 종료시간 입력 이벤트 (개별 업데이트)
   document.querySelectorAll('.endTimeInput').forEach(input=>{
-    input.removeEventListener('input', input.listener); // 기존 바인딩 제거
-    input.listener = function(e){
-      const idx = Number(e.target.dataset.index);
+    const idx = Number(input.dataset.index);
+    input.oninput = function(e){
       sets[idx].end = e.target.value;
-      renderTable();
-    };
-    input.addEventListener('input', input.listener);
+      // 해당 row만 업데이트
+      const startSec = sets[idx].start;
+      const endSec = parseTime(sets[idx].end || "00:00");
+      const duration = endSec - startSec;
+      const restSec = restModeSelect.value==='ratio' ? duration : Number(restTimeInput.value) || 0;
+
+      sets[idx].duration = duration;
+      sets[idx].rest = restSec;
+
+      const row = input.parentElement.parentElement;
+      row.cells[3].innerText = formatTime(duration);
+      row.cells[4].innerText = formatTime(restSec);
+
+      // 다음 세트 시작시간 업데이트
+      if(idx+1 < sets.length){
+        const nextRow = tableBody.rows[idx+1];
+        const nextStart = endSec + restSec;
+        sets[idx+1].start = nextStart;
+        nextRow.cells[1].innerText = formatTime(nextStart);
+
+        // 다음 세트 소요시간/휴식시간 다시 계산
+        const nextEndSec = parseTime(sets[idx+1].end || "00:00");
+        const nextDuration = nextEndSec - nextStart;
+        const nextRest = restModeSelect.value==='ratio' ? nextDuration : Number(restTimeInput.value) || 0;
+        sets[idx+1].duration = nextDuration;
+        sets[idx+1].rest = nextRest;
+        nextRow.cells[3].innerText = formatTime(nextDuration);
+        nextRow.cells[4].innerText = formatTime(nextRest);
+      }
+    }
   });
 }
 

@@ -46,7 +46,7 @@
       <button class="tab" data-tab="pb">PB</button>
     </nav>
 
-<section id="time" class="card active">
+    <section id="time" class="card active">
   <h2>시간 계산기</h2>
 
   <!-- 1. 휴식시간 설정 -->
@@ -109,13 +109,39 @@ function formatTime(sec){
   return `${m}:${s}`;
 }
 
+// 휴식 모드 선택 시 휴식시간 입력 활성/비활성
+restModeSelect.addEventListener('change', ()=>{
+  if(restModeSelect.value==='ratio'){
+    restTimeInput.disabled = true;
+    restTimeInput.value = '';
+  }else{
+    restTimeInput.disabled = false;
+  }
+});
+
 function renderTable(){
   tableBody.innerHTML = '';
   sets.forEach((set,i)=>{
+    // 운동 시작시간 계산
+    const prevEnd = i>0 ? parseTime(sets[i-1].end) : 0;
+    const prevRest = i>0 ? sets[i-1].rest : 0;
+    const startSec = prevEnd + prevRest;
+
+    // 종료시간 파싱
+    let endSec = parseTime(set.end);
+
+    // 세트 소요시간
+    const duration = endSec - startSec;
+
+    // 쉬는시간 계산
+    let restSec = restModeSelect.value==='ratio' ? duration : Number(restTimeInput.value);
+
+    // 현재 세트 정보 저장
+    set.start = startSec;
+    set.duration = duration;
+    set.rest = restSec;
+
     const row = document.createElement('tr');
-    const startSec = i===0 ? 0 : parseTime(sets[i-1].end) + (restModeSelect.value==='manual' ? Number(restTimeInput.value) : parseTime(sets[i-1].duration));
-    const duration = parseTime(set.end) - startSec;
-    const restSec = restModeSelect.value==='manual' ? Number(restTimeInput.value) : duration;
     row.innerHTML = `
       <td>${i+1}</td>
       <td>${formatTime(startSec)}</td>
@@ -126,13 +152,15 @@ function renderTable(){
     tableBody.appendChild(row);
   });
 
-  // 운동 종료시간 입력시 자동 업데이트
+  // 운동 종료시간 입력 시 자동 업데이트
   document.querySelectorAll('.endTimeInput').forEach(input=>{
-    input.addEventListener('input', e=>{
+    input.removeEventListener('input', input.listener); // 기존 바인딩 제거
+    input.listener = function(e){
       const idx = Number(e.target.dataset.index);
       sets[idx].end = e.target.value;
       renderTable();
-    });
+    };
+    input.addEventListener('input', input.listener);
   });
 }
 
@@ -141,7 +169,7 @@ generateBtn.addEventListener('click', ()=>{
   if(!total || total < 1){ alert('세트 수를 입력해주세요'); return; }
   sets = [];
   for(let i=0;i<total;i++){
-    sets.push({end:'00:00'});
+    sets.push({end:'00:00', start:0, duration:0, rest:0});
   }
   renderTable();
 });

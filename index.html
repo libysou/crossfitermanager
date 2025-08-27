@@ -181,6 +181,15 @@ function updateInputs(){
   const inputs = tableBody.querySelectorAll('input');
   inputs.forEach(input=>{
     input.addEventListener('input', (e)=>{
+      // 자동 ':' 입력
+     let val = e.target.value.replace(/\D/g,''); // 숫자만 남기기
+     if(val.length >= 3){
+        val = val.slice(0, val.length-2) + ':' + val.slice(-2);
+        } else if(val.length >= 2){
+        val = val.slice(0, val.length-2) + ':' + val.slice(-2);
+        }
+       e.target.value = val;
+
       const i = Number(e.target.dataset.index);
       const sec = parseTime(e.target.value || "0:00");
       sets[i].end = sec;

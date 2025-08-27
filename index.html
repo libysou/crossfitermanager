@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>운동 계산기 (모바일)</title>
+  <style>
+    /* 간단한 모바일 최적화 스타일 */
+    :root{--bg:#0f172a;--card:#0b1220;--accent:#06b6d4;--muted:#94a3b8;--text:#e6eef8}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,'Noto Sans KR',sans-serif;background:linear-gradient(180deg,#071022 0%,#07182a 100%);color:var(--text)}
+    .app{max-width:440px;margin:12px auto;padding:12px}
+    header{display:flex;align-items:center;justify-content:space-between}
+    h1{font-size:18px;margin:0}
+    nav{display:flex;gap:6px;margin:12px 0;overflow:auto}
+    button.tab{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 12px;border-radius:10px;color:var(--text);font-weight:600}
+    .card{background:var(--card);padding:12px;border-radius:12px;margin-bottom:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    label{font-size:13px;color:var(--muted)}
+    input[type=number],input[type=text],select{width:100%;padding:10px;margin-top:6px;border-radius:10px;border:0;background:rgba(255,255,255,0.02);color:var(--text)}
+    .row{display:flex;gap:8px}
+    .row > *{flex:1}
+    .bigbtn{width:100%;padding:14px;border-radius:12px;border:0;background:var(--accent);color:#032023;font-weight:700;font-size:16px}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{padding:6px;border-bottom:1px dashed rgba(255,255,255,0.03);font-size:13px}
+    .small{font-size:12px;color:var(--muted)}
+    .muted{color:var(--muted)}
+    .flex{display:flex;gap:8px;align-items:center}
+    .pill{background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:999px;font-weight:600}
+    .linklike{background:transparent;border:0;color:var(--accent);font-weight:700}
+    .foot{font-size:12px;color:var(--muted);text-align:center;margin-top:10px}
+    @media(min-width:460px){.app{margin-top:20px}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>운동 계산기 (모바일) 🏋️</h1>
+      <div class="pill small">무료 · 로컬 저장</div>
+    </header>
+
+    <nav>
+      <button class="tab" data-tab="time">시간</button>
+      <button class="tab" data-tab="1rm">1RM</button>
+      <button class="tab" data-tab="rpe">RPE</button>
+      <button class="tab" data-tab="pace">Pace</button>
+      <button class="tab" data-tab="plates">플레이트</button>
+      <button class="tab" data-tab="pb">PB</button>
+    </nav>
+
+    <section id="time" class="card">
+      <div class="flex">
+        <div>
+          <label>목표 세트 수</label>
+          <input id="targetSets" type="number" min="1" value="8">
+        </div>
+        <div>
+          <label>휴식 모드</label>
+          <select id="restMode">
+            <option value="1to1">1:1 Rest</option>
+            <option value="fixed">고정 Rest</option>
+          </select>
+        </div>
+      </div>
+      <div id="fixedRestRow" style="display:none;margin-top:8px">
+        <label>고정 휴식시간 (초)</label>
+        <input id="fixedRestSec" type="number" min="0" value="60">
+      </div>
+
+      <div style="margin-top:10px" class="flex">
+        <button id="startBtn" class="bigbtn">지금 시작</button>
+        <button id="recordBtn" class="bigbtn" style="background:#94a3b8;color:#03141a">세트 종료 기록</button>
+      </div>
+      <div style="margin-top:8px" class="flex">
+         <button id="undoBtn" class="bigbtn" style="background:#0b1220;color:var(--accent);border:1px solid var(--accent);">되돌리기</button>
+         <button id="resetBtn" class="bigbtn" style="background:#0b1220;color:#f87171;border:1px solid #f87171;">리셋</button>
+      </div>
+
+      <div style="margin-top:10px">
+        <table id="logTable">
+          <thead><tr><th>세트</th><th>시작</th><th>종료</th><th>운동</th><th>휴식</th><th>다음시작</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="foot small">버튼을 눌러 세트 종료를 기록하세요. 데이터는 기기 로컬에 저장됩니다.</div>
+    </section>
+
+    <section id="1rm" class="card" style="display:none">
+      <label>사용 중량 (lb)</label>
+      <input id="currWeight" type="number" value="225">
+      <label style="margin-top:8px">반복 수</label>
+      <input id="currReps" type="number" value="5">
+      <label style="margin-top:8px">공식</label>
+      <select id="rmFormula">
+        <option value="epley">Epley</option>
+        <option value="brzycki">Brzycki</option>
+      </select>
+      <div style="margin-top:8px">
+        <button id="calc1RM" class="bigbtn">1RM 추정</button>
+        <div id="oneRmResult" class="small muted" style="margin-top:8px"></div>
+      </div>
+    </section>
+
+    <section id="rpe" class="card" style="display:none">
+      <label>예상 1RM (lb)</label>
+      <input id="rpe1rm" type="number" value="315">
+      <label style="margin-top:8px">목표 반복 수</label>
+      <input id="rpeReps" type="number" value="5">
+      <label style="margin-top:8px">목표 RPE</label>
+      <select id="rpeSelect">
+        <option>10</option>
+        <option>9.5</option>
+        <option>9</option>
+        <option>8.5</option>
+        <option selected>8</option>
+        <option>7.5</option>
+        <option>7</option>
+        <option>6.5</option>
+        <option>6</option>
+      </select>
+      <div style="margin-top:8px">
+        <button id="calcRPE" class="bigbtn">추천 중량 계산</button>
+        <div id="rpeResult" class="small muted" style="margin-top:8px"></div>
+      </div>
+      <div class="small muted" style="margin-top:6px">RPE→% 표준 매핑을 사용하며 2.5lb 단위로 반올림합니다.</div>
+    </section>
+
+    <section id="pace" class="card" style="display:none">
+      <label>거리 (m)</label>
+      <input id="paceDist" type="number" value="2000">
+      <label style="margin-top:8px">시간 (mm:ss)</label>
+      <input id="paceTime" type="text" value="08:15">
+      <div style="margin-top:8px">
+        <button id="calcPace" class="bigbtn">페이스 계산</button>
+        <div id="paceResult" class="small muted" style="margin-top:8px"></div>
+      </div>
+    </section>
+
+    <section id="plates" class="card" style="display:none">
+      <label>바벨 종류</label>
+      <select id="barType">
+        <option value="45">45 lb (standard)</option>
+        <option value="35">35 lb</option>
+        <option value="15">15 lb</option>
+      </select>
+      <label style="margin-top:8px">목표 중량 (lb)</label>
+      <input id="targetWeight" type="number" value="315">
+      <label style="margin-top:8px">웜업 퍼센트 (쉼표로 구분, 기본:60,80,90)</label>
+      <input id="warmupPerc" type="text" value="60,80,90">
+      <div style="margin-top:8px">
+        <button id="calcPlates" class="bigbtn">플레이트 계산</button>
+        <div id="platesResult" class="small muted" style="margin-top:8px"></div>
+      </div>
+    </section>
+
+    <section id="pb" class="card" style="display:none">
+      <label>운동명</label>
+      <input id="pbName" type="text" placeholder="예: 데드리프트">
+      <div class="row" style="margin-top:8px">
+        <div>
+          <label>무게(lb)</label>
+          <input id="pbWeight" type="number">
+        </div>
+        <div>
+          <label>횟수</label>
+          <input id="pbReps" type="number">
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <button id="savePB" class="bigbtn">PB 저장</button>
+      </div>
+      <div style="margin-top:12px">
+        <strong>내 기록</strong>
+        <div id="pbList" class="small muted"></div>
+      </div>
+    </section>
+
+    <div style="height:28px"></div>
+  </div>
+
+  <script>
+    // 탭 전환
+    document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',e=>{
+      document.querySelectorAll('section').forEach(s=>s.style.display='none');
+      const id = btn.dataset.tab;
+      document.getElementById(id).style.display='block';
+    }));
+
+    // 초기 탭
+    document.querySelector('.tab[data-tab="time"]').click();
+
+    /* ========== 시간 계산기 로직 ========== */
+    let startTime = null; // epoch ms
+    let rows = JSON.parse(localStorage.getItem('timeLogs')||'[]');
+    const tbody = document.querySelector('#logTable tbody');
+    const targetSetsInput = document.getElementById('targetSets');
+
+    function fmt(ms){
+      const s = Math.floor(ms/1000);
+      const mm = Math.floor(s/60).toString().padStart(2,'0');
+      const ss = (s%60).toString().padStart(2,'0');
+      return mm+':'+ss;
+    }
+
+    function renderRows(){
+      tbody.innerHTML='';
+      rows.forEach((r,i)=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML=`<td>${i+1}</td><td>${r.startText}</td><td>${r.endText}</td><td>${r.workText}</td><td>${r.restText}</td><td>${r.nextStartText||''}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+    renderRows();
+
+    document.getElementById('startBtn').addEventListener('click',()=>{
+      startTime = Date.now();
+      rows = [];
+      saveRows();
+      renderRows();
+      alert('시작되었습니다. 세트가 끝날 때마다 "세트 종료 기록"을 눌러주세요.');
+    });
+
+    document.getElementById('recordBtn').addEventListener('click',()=>{
+      if(!startTime){
+        alert('먼저 시작을 눌러 시작 시점을 기록하세요.');return;
+      }
+      const now = Date.now();
+      if(rows.length===0){
+        // 첫 세트
+        const start = startTime;
+        const end = now;
+        const work = end-start;
+        const restMode = document.getElementById('restMode').value;
+        let rest = work;
+        if(restMode==='fixed'){
+          rest = Number(document.getElementById('fixedRestSec').value||60)*1000;
+        }
+        const nextStart = end + rest;
+        const row = {
+          start, end, work, rest, nextStart,
+          startText:fmt(start-startTime), endText:fmt(end-startTime), workText:fmt(work), restText:fmt(rest), nextStartText:fmt(nextStart-startTime)
+        };
+        rows.push(row);
+      } else {
+        // 다음 세트: start는 이전 nextStart
+        const prev = rows[rows.length-1];
+        const start = prev.nextStart;
+        const end = now;
+        const work = end-start;
+        const restMode = document.getElementById('restMode').value;
+        let rest = work;
+        if(restMode==='fixed'){
+          rest = Number(document.getElementById('fixedRestSec').value||60)*1000;
+        }
+        const nextStart = end + rest;
+        const row = {
+          start, end, work, rest, nextStart,
+          startText:fmt(start-startTime), endText:fmt(end-startTime), workText:fmt(Math.max(0,work)), restText:fmt(rest), nextStartText:fmt(nextStart-startTime)
+        };
+        rows.push(row);
+      }
+      saveRows();renderRows();
+      // 완료 알림
+      const t = document.getElementById('targetSets').value||0;
+      if(rows.length>=Number(t)) alert('목표 세트 수 도달!');
+    });
+
+    document.getElementById('undoBtn').addEventListener('click',()=>{
+      rows.pop(); saveRows(); renderRows();
+    });
+    document.getElementById('resetBtn').addEventListener('click',()=>{ if(confirm('모든 기록을 초기화할까요?')){ rows=[]; startTime=null; saveRows(); renderRows(); }});
+
+    function saveRows(){ localStorage.setItem('timeLogs', JSON.stringify(rows)); }
+
+    document.getElementById('restMode').addEventListener('change',e=>{
+      document.getElementById('fixedRestRow').style.display = e.target.value==='fixed'?'block':'none';
+    });
+
+    /* ========== 1RM 계산기 ========== */
+    document.getElementById('calc1RM').addEventListener('click',()=>{
+      const w = Number(document.getElementById('currWeight').value);
+      const r = Number(document.getElementById('currReps').value);
+      const formula = document.getElementById('rmFormula').value;
+      let one = 0;
+      if(formula==='epley'){
+        one = w*(1 + r/30);
+      } else {
+        one = w*(36/(37 - r));
+      }
+      document.getElementById('oneRmResult').textContent = `예상 1RM ≈ ${Math.round(one)} lb`;
+    });
+
+    /* ========== RPE 계산기 ========== */
+    // 간단한 RPE->% 테이블(반복수와 RPE로 % 반환). 표준 매핑을 간단히 구현
+    const rpeTable = {
+      // reps: {RPE: %}
+      1: {10:1.00,9.5:0.98,9:0.97,8.5:0.96,8:0.95,7.5:0.94,7:0.93},
+      2: {10:0.98,9.5:0.96,9:0.95,8.5:0.94,8:0.92,7.5:0.9,7:0.89},
+      3: {10:0.96,9.5:0.94,9:0.92,8.5:0.9,8:0.89,7.5:0.87,7:0.86},
+      4: {10:0.94,9.5:0.92,9:0.9,8.5:0.88,8:0.87,7.5:0.85,7:0.84},
+      5: {10:0.92,9.5:0.9,9:0.88,8.5:0.86,8:0.85,7.5:0.83,7:0.82},
+      6: {10:0.9,9.5:0.88,9:0.86,8.5:0.85,8:0.83,7.5:0.81,7:0.8},
+      7: {10:0.88,9.5:0.86,9:0.84,8.5:0.83,8:0.81,7.5:0.79,7:0.78},
+      8: {10:0.86,9.5:0.84,9:0.82,8.5:0.81,8:0.79,7.5:0.77,7:0.76},
+      9: {10:0.84,9.5:0.82,9:0.8,8.5:0.79,8:0.77,7.5:0.75,7:0.74},
+      10:{10:0.82,9.5:0.8,9:0.78,8.5:0.77,8:0.75,7.5:0.73,7:0.72}
+    };
+
+    document.getElementById('calcRPE').addEventListener('click',()=>{
+      const one = Number(document.getElementById('rpe1rm').value);
+      let reps = Number(document.getElementById('rpeReps').value);
+      reps = Math.max(1,Math.min(10,reps));
+      const rpe = Number(document.getElementById('rpeSelect').value);
+      const t = rpeTable[reps] || rpeTable[10];
+      // find closest key in t
+      let keys = Object.keys(t).map(Number);
+      let chosen = keys.reduce((a,b)=> Math.abs(a-rpe)<Math.abs(b-rpe)?a:b );
+      const pct = t[chosen];
+      let load = Math.round((one * pct)/2.5)*2.5; // 2.5 lb 단위 반올림
+      document.getElementById('rpeResult').textContent = `추천 수행 중량 ≈ ${load} lb (약 ${Math.round(pct*100)}% of 1RM)`;
+    });
+
+    /* ========== Pace 계산기 ========== */
+    document.getElementById('calcPace').addEventListener('click',()=>{
+      const d = Number(document.getElementById('paceDist').value);
+      const t = document.getElementById('paceTime').value.split(':');
+      if(t.length<2){ alert('시간 형식은 mm:ss 예: 08:15'); return; }
+      const mm = Number(t[0]); const ss = Number(t[1]);
+      const totalSec = mm*60 + ss;
+      const per500 = totalSec / (d/500);
+      const per1k = totalSec / (d/1000);
+      function toMMSS(s){ const m=Math.floor(s/60).toString().padStart(2,'0'); const sec=Math.round(s%60).toString().padStart(2,'0'); return m+':'+sec }
+      document.getElementById('paceResult').textContent = `500m 페이스: ${toMMSS(per500)} / 1km 페이스: ${toMMSS(per1k)}`;
+    });
+
+    /* ========== Plates 계산기 ========== */
+    function calcPlatesForBar(bar, target){
+      const barW = Number(bar);
+      if(target<=barW) return {ok:false,msg:'목표 중량이 바벨보다 작거나 같습니다.'};
+      let remain = target - barW;
+      const plates = [45,35,25,10,5,2.5]; // lb
+      const used = {};
+      plates.forEach(p=>used[p]=0);
+      for(let p of plates){
+        while(remain >= p*2 - 1e-6){ used[p]+=2; remain -= p*2; }
+      }
+      if(Math.abs(remain) > 1e-6) return {ok:false,msg:'정확한 로딩 불가 (작은 플레이트 필요)'};
+      return {ok:true,used};
+    }
+
+    document.getElementById('calcPlates').addEventListener('click',()=>{
+      const bar = document.getElementById('barType').value;
+      const target = Number(document.getElementById('targetWeight').value);
+      const res = calcPlatesForBar(bar,target);
+      if(!res.ok){ document.getElementById('platesResult').textContent = res.msg; return; }
+      const used = res.used;
+      let html = '플레이트 로딩:\n';
+      Object.keys(used).forEach(k=>{ if(used[k]>0) html+=`${k} lb x ${used[k]} `});
+      // 웜업
+      const percs = (document.getElementById('warmupPerc').value||'60,80,90').split(',').map(x=>Number(x.trim())).filter(x=>!isNaN(x));
+      html += '\n웜업: ';
+      percs.forEach(p=>{ const wt = Math.round((target * (p/100))/2.5)*2.5; html += `${p}% → ${wt} lb, ` });
+      document.getElementById('platesResult').textContent = html;
+    });
+
+    /* ========== PB 저장 (localStorage) ========== */
+    function loadPB(){ return JSON.parse(localStorage.getItem('myPBs')||'[]'); }
+    function renderPB(){ const arr = loadPB(); const el=document.getElementById('pbList'); if(arr.length===0){ el.textContent='기록 없음'; return; } el.innerHTML=''; arr.forEach((p,i)=>{ const d=document.createElement('div'); d.textContent = `${p.name}: ${p.weight} lb × ${p.reps} (${p.date}) `; const btn=document.createElement('button'); btn.textContent='삭제'; btn.className='linklike'; btn.addEventListener('click',()=>{ arr.splice(i,1); localStorage.setItem('myPBs',JSON.stringify(arr)); renderPB(); }); d.appendChild(btn); el.appendChild(d); }); }
+    document.getElementById('savePB').addEventListener('click',()=>{
+      const name = document.getElementById('pbName').value.trim(); const w=Number(document.getElementById('pbWeight').value); const reps=Number(document.getElementById('pbReps').value);
+      if(!name||!w) { alert('운동명과 무게를 입력해주세요.'); return; }
+      const arr = loadPB(); arr.unshift({name,weight:w,reps,date:new Date().toISOString().split('T')[0]}); localStorage.setItem('myPBs',JSON.stringify(arr)); renderPB();
+    });
+    renderPB();
+
+    // 로컬에 먼저 저장된 시간 로그가 있으나 startTime이 null인 경우 간단 리셋
+    if(rows.length>0){ document.getElementById('startBtn').textContent='기록 이어하기 (기기 기준)'; }
+
+  </script>
+</body>
+</html>

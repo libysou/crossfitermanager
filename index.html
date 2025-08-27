@@ -46,45 +46,63 @@
       <button class="tab" data-tab="pb">PB</button>
     </nav>
 
-    <section id="time" class="card active">
-  <h2>시간 계산기 (엑셀 표형)</h2>
-  <label>휴식 시간 설정 (초)</label>
-  <input type="number" id="restTime" value="60" min="0" />
+<section id="time" class="card active">
+  <h2>시간 계산기</h2>
+
+  <!-- 1. 휴식시간 설정 -->
+  <div class="row" style="margin-bottom:12px; gap:6px;">
+    <label for="restMode">휴식 시간 모드:</label>
+    <select id="restMode">
+      <option value="manual">수동설정</option>
+      <option value="ratio">1:1 Rest</option>
+    </select>
+    <input type="number" id="restTime" placeholder="휴식시간(초)" min="0" />
+  </div>
+
+  <!-- 2. 세트 수 설정 -->
+  <div class="row" style="margin-bottom:12px; gap:6px;">
+    <label for="totalSets">세트 수:</label>
+    <input type="number" id="totalSets" placeholder="세트 수" min="1" />
+    <button class="bigbtn" id="generateTable">표 생성</button>
+  </div>
+
+  <!-- 3. 엑셀형 테이블 -->
   <table id="timeTable">
     <thead>
       <tr>
         <th>세트</th>
-        <th>운동 종료 시간</th>
-        <th>세트 소요 시간</th>
-        <th>다음 세트 시작 시간</th>
+        <th>운동 시작시간</th>
+        <th>운동 종료시간</th>
+        <th>세트 소요시간</th>
+        <th>쉬는시간</th>
       </tr>
     </thead>
-    <tbody>
-      <!-- 세트 행이 여기 추가됨 -->
-    </tbody>
+    <tbody></tbody>
   </table>
-  <div class="row">
-    <input type="text" id="currentTime" placeholder="mm:ss 입력" />
-    <button class="bigbtn" id="addSet">세트 추가</button>
+
+  <!-- 4. 버튼 -->
+  <div class="row" style="margin-top:12px; gap:6px;">
     <button class="bigbtn" id="undoSet">되돌리기</button>
     <button class="bigbtn" id="resetTable">리셋</button>
   </div>
 </section>
 
 <script>
+const generateBtn = document.getElementById('generateTable');
 const tableBody = document.querySelector('#timeTable tbody');
-const addBtn = document.getElementById('addSet');
+const totalSetsInput = document.getElementById('totalSets');
+const restTimeInput = document.getElementById('restTime');
+const restModeSelect = document.getElementById('restMode');
 const undoBtn = document.getElementById('undoSet');
 const resetBtn = document.getElementById('resetTable');
-const restInput = document.getElementById('restTime');
-const currentTimeInput = document.getElementById('currentTime');
 
 let sets = [];
 
-function parseTime(str) {
+function parseTime(str){
   const [m,s] = str.split(':').map(Number);
   return m*60 + s;
 }
+
 function formatTime(sec){
   const m = Math.floor(sec/60).toString().padStart(2,'0');
   const s = (sec%60).toString().padStart(2,'0');
@@ -95,39 +113,51 @@ function renderTable(){
   tableBody.innerHTML = '';
   sets.forEach((set,i)=>{
     const row = document.createElement('tr');
-    const prevEnd = i>0 ? parseTime(sets[i-1].end) : 0;
-    const endSec = parseTime(set.end);
-    const duration = i===0 ? endSec : endSec - prevEnd;
-    const nextStart = endSec + Number(restInput.value);
+    const startSec = i===0 ? 0 : parseTime(sets[i-1].end) + (restModeSelect.value==='manual' ? Number(restTimeInput.value) : parseTime(sets[i-1].duration));
+    const duration = parseTime(set.end) - startSec;
+    const restSec = restModeSelect.value==='manual' ? Number(restTimeInput.value) : duration;
     row.innerHTML = `
       <td>${i+1}</td>
-      <td>${set.end}</td>
+      <td>${formatTime(startSec)}</td>
+      <td><input type="text" value="${set.end}" data-index="${i}" class="endTimeInput" /></td>
       <td>${formatTime(duration)}</td>
-      <td>${formatTime(nextStart)}</td>
+      <td>${formatTime(restSec)}</td>
     `;
     tableBody.appendChild(row);
   });
+
+  // 운동 종료시간 입력시 자동 업데이트
+  document.querySelectorAll('.endTimeInput').forEach(input=>{
+    input.addEventListener('input', e=>{
+      const idx = Number(e.target.dataset.index);
+      sets[idx].end = e.target.value;
+      renderTable();
+    });
+  });
 }
 
-addBtn.addEventListener('click',()=>{
-  const timeStr = currentTimeInput.value.trim();
-  if(!timeStr.match(/^\d{1,2}:\d{2}$/)){ alert('mm:ss 형식으로 입력하세요'); return; }
-  sets.push({end:timeStr});
-  currentTimeInput.value='';
+generateBtn.addEventListener('click', ()=>{
+  const total = Number(totalSetsInput.value);
+  if(!total || total < 1){ alert('세트 수를 입력해주세요'); return; }
+  sets = [];
+  for(let i=0;i<total;i++){
+    sets.push({end:'00:00'});
+  }
   renderTable();
 });
 
-undoBtn.addEventListener('click',()=>{
+undoBtn.addEventListener('click', ()=>{
   sets.pop();
   renderTable();
 });
 
-resetBtn.addEventListener('click',()=>{
-  sets=[];
+resetBtn.addEventListener('click', ()=>{
+  sets = [];
   renderTable();
 });
 </script>
 
+ 
     <section id="1rm" class="card" style="display:none">
       <label>사용 중량 (lb)</label>
       <input id="currWeight" type="number" value="225">

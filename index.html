@@ -18,7 +18,7 @@ label{font-size:13px;color:var(--muted)}
 input[type=number],input[type=text],select{width:100%;padding:10px;margin-top:6px;border-radius:10px;border:0;background:rgba(255,255,255,0.02);color:var(--text)}
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .row > *{flex:1}
-.bigbtn{width:100%;padding:14px;border-radius:12px;border:0;background:var(--accent);color:#032023;font-weight:700;font-size:16px;transition:transform 0.1s,box-shadow 0.1s;}
+.bigbtn{width:100%;padding:12px;border-radius:12px;border:0;background:var(--accent);color:#032023;font-weight:700;font-size:16px;transition:transform 0.1s,box-shadow 0.1s;}
 .bigbtn:active{transform:translateY(2px);box-shadow:0 2px 4px rgba(0,0,0,0.2);}
 table{width:100%;border-collapse:collapse;margin-top:10px}
 th,td{padding:6px;border-bottom:1px dashed rgba(255,255,255,0.03);font-size:13px;text-align:center}
@@ -39,7 +39,6 @@ th,td{padding:6px;border-bottom:1px dashed rgba(255,255,255,0.03);font-size:13px
 <button class="tab" data-tab="rpe">RPE</button>
 <button class="tab" data-tab="pace">Pace</button>
 <button class="tab" data-tab="plates">플레이트</button>
-<button class="tab" data-tab="pb">PB</button>
 </nav>
 
 <!-- ================= 시간 계산기 ================= -->
@@ -118,17 +117,10 @@ th,td{padding:6px;border-bottom:1px dashed rgba(255,255,255,0.03);font-size:13px
 <label>목표 중량(lb):<input type="number" id="plateTarget" value="225"></label>
 <label>웜업 퍼센트(%):<input type="text" id="warmupPercents" value="30,60,90"></label>
 </div>
+<button class="calc-btn" onclick="calculatePlates()">계산하기</button>
 <div id="plateResult"></div>
 </section>
 
-<!-- ================= PB ================= -->
-<section id="pb" class="card">
-<h2>PB 기록</h2>
-<label>운동 이름:<input type="text" id="pbName" value="스쿼트"></label>
-<label>중량(lb):<input type="number" id="pbWeight" value="200"></label>
-<button class="bigbtn" id="savePB">저장</button>
-<ul id="pbList"></ul>
-</section>
 
 </div>
 
@@ -278,15 +270,7 @@ function updatePlates(){
 [barbellSelect,targetInput,percInput].forEach(el=>el.addEventListener('input',updatePlates));
 updatePlates();
 
-// ================= PB =================
-document.getElementById('savePB').addEventListener('click',()=>{
-  const name=document.getElementById('pbName').value;
-  const weight=document.getElementById('pbWeight').value;
-  if(!name || !weight) return;
-  const li=document.createElement('li');
-  li.innerText=`${name}: ${weight} lb`;
-  document.getElementById('pbList').appendChild(li);
-});
+
 </script>
 </body>
 </html>
